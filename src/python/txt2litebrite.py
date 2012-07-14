@@ -37,7 +37,10 @@ f = urllib2.urlopen('http://10.1.3.251/litebrite/peggy/set_color/' + leasecode +
 row = 0
 col = 0
 for line in contents:
-    f = urllib2.urlopen('http://10.1.3.251/litebrite/peggy/write/' + leasecode + '/' + str(row) + '/' + str(col) + '/' + urllib.quote(line, ''))
+    values = {'lease_code':leasecode, 'row':str(row), 'col':str(col), 'msg':line}
+    data = urllib.urlencode(values)
+    f = urllib2.Request('http://10.1.3.251/litebrite/peggy/write', data)
+    openResult = urllib2.urlopen(f)
     row = row + 1
     time.sleep(0.5)
 
