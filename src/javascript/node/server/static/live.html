@@ -4,39 +4,69 @@
 <head>
     <title>Live page!</title>
     <script src="jquery-1.7.2.min.js"></script>
+    <style>
+        .char {
+            background-color: #202020;
+            color: #FFFFFF;
+            width: 10px;
+            margin-right: 1px;
+            font-size: 10pt;
+            display: inline-block;
+            height: 15px;
+            font-family: monospace;
+        }
+
+        .char.green {
+            color: lime;
+        }
+
+        .char.amber {
+            color: orange;
+        }
+
+        .char.red {
+            color: red;
+        }
+
+        .row {
+            background-color: #000000;
+            padding-bottom: 2px;
+            padding-top: 2px;
+
+        }
+    </style>
 </head>
 <body>
-    live page
+live page
 
 
-    <div id="liveBoardDiv">
+<div id="liveBoardDiv">
 
-    </div>
-
+</div>
 
 
 <script>
 
-    var updateBoard = function(data) {
+    var updateBoard = function (data) {
         if (data && data['buffer']) {
 
             var width = data['width'],
-                height = data['height'],
-                buffer = data['buffer'];
+                    height = data['height'],
+                    buffer = data['buffer'];
 
             var rowsOut = [];
 
-            for(var row=0;row<height;row++) {
+            for (var row = 0; row < height; row++) {
 
                 var line = [];
-                for(var col=0;col<width;col++) {
+                for (var col = 0; col < width; col++) {
                     var val = buffer[row][col];
 
                     var valOut = (val) ? val : '&nbsp;';
-                    line.push("<span>" + valOut + "</span>")
+                    line.push("<span class='char green'>" + valOut + "</span>")
                 }
 
-                rowsOut.push("<div class='row row"+row+"'>"+ line.join('') +"</div>");
+                rowsOut.push("<div class='row row" + row + "'>" + line.join('') + "</div>");
             }
 
             var boardOut = rowsOut.join('');
@@ -52,30 +82,27 @@
     };
 
     var stamp = null;
-    var longPollingFn = function() {
+    var longPollingFn = function () {
         $.ajax({
-            type: "GET",
-            url: "/bufferPolling?stamp=" + stamp,
-            async: true,
-            cache: false,
-            success: function(data) {
+            type:"GET",
+            url:"/bufferPolling?stamp=" + stamp,
+            async:true,
+            cache:false,
+            success:function (data) {
                 updateBoard(data);
                 stamp = data['stamp'];
                 longPollingFn();
             },
-            error: function(xhr, txt, err) {
+            error:function (xhr, txt, err) {
                 console.error("Args: ", arguments);
                 console.debug('waiting 5 seconds before polling...');
                 setTimeout(longPollingFn, 5000);
             }
         });
     };
-    $(function() {
+    $(function () {
         longPollingFn();
     });
-
-
-
 
 
 </script>
