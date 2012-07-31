@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Live page!</title>
+    <script src="jquery-1.7.2.min.js"></script>
+</head>
+<body>
+    live page
+
+
+    <div id="liveBoardDiv">
+
+    </div>
+
+
+
+<script>
+
+    var updateBoard = function(data) {
+        if (data && data['buffer']) {
+
+            var width = data['width'],
+                height = data['height'],
+                buffer = data['buffer'];
+
+            var rowsOut = [];
+
+            for(var row=0;row<height;row++) {
+
+                var line = [];
+                for(var col=0;col<width;col++) {
+                    var val = buffer[row][col];
+
+                    var valOut = (val) ? val : '&nbsp;';
+                    line.push("<span>" + valOut + "</span>")
+                }
+
+                rowsOut.push("<div class='row row"+row+"'>"+ line.join('') +"</div>");
+            }
+
+            var boardOut = rowsOut.join('');
+
+
+            //TODO: rows, cols, etc.
+            $("#liveBoardDiv").html(boardOut);
+        }
+        else {
+            console.debug('probably timed out...');
+        }
+
+    };
+
+    var stamp = null;
+    var longPollingFn = function() {
+        $.ajax({
+            type: "GET",
+            url: "/bufferPolling?stamp=" + stamp,
+            async: true,
+            cache: false,
+            success: function(data) {
+                updateBoard(data);
+                stamp = data['stamp'];
+                longPollingFn();
+            },
+            error: function(xhr, txt, err) {
+                console.error("Args: ", arguments);
+                console.debug('waiting 5 seconds before polling...');
+                setTimeout(longPollingFn, 5000);
+            }
+        });
+    };
+    $(function() {
+        longPollingFn();
+    });
+
+
+
+
+
+</script>
+
+</body>
+</html>

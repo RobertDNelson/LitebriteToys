@@ -6,7 +6,10 @@
  * To change this template use File | Settings | File Templates.
  */
 
-var journey = require('journey');
+var journey = require('journey'),
+    static = require('node-static'),
+    files = new (static.Server)('./static'),
+    sys = require('sys');
 
 
 var PeggyBoard = function() {
@@ -14,6 +17,7 @@ var PeggyBoard = function() {
 };
 PeggyBoard.prototype = {
     _buffer: null,
+    server: null,
     initialize_buffer: function(width, height) {
         this._buffer = new Array(height);
         this._width = width;
@@ -23,7 +27,20 @@ PeggyBoard.prototype = {
         for(var i=0; i< height; i++ ) {
             this._buffer[i] = new Array(width);
         }
+
+        var eventsType = require('events').EventEmitter;
+        if (this.server) {
+            this.server.emit("updated");
+        }
+        this.server = new eventsType();
     },
+    onBoardUpdated: function() {
+        this.server.emit("updated");
+    },
+
+    width: function() { return this._width; },
+    height: function() { return this._height; },
+
     clear_board:function(row) {
         if ((row !== 0) && (!row)) {
             //wipe everything.
@@ -33,6 +50,8 @@ PeggyBoard.prototype = {
             //just wipe that row
             this._buffer[row] = new Array(this._width);
         }
+
+        this.onBoardUpdated();
     },
     write_to_board:function (row, col, msg) {
         if ((row !== 0) && (!row)) { row = 0; }
@@ -45,7 +64,41 @@ PeggyBoard.prototype = {
                 i++;
             }
         }
+        this.onBoardUpdated();
         return true;
+    },
+    raw_buffer: function() {
+        return this._buffer;
+    },
+    render_buffer: function() {
+        var b = this._buffer;
+        var result = '';
+        for(var r=0;r< b.length;r++ )
+        {
+            var chars = b[r].map(function(c) { return (c) ? c : ''; });
+            var line = chars.join('');
+            result += line + '\r\n';
+        }
+        return result;
+    },
+    render_buffer_html: function() {
+        var b = this._buffer;
+        var result = '';
+        for(var r=0;r< b.length;r++ )
+        {
+            var chars = b[r].map(function(c) {
+                if (!c) { return ''; }
+                //TODO: Colors!
+//                var code = c.charCodeAt();
+//                if ((code >= 29) && (code <= 31)) {
+//                    return "<span style='color:green'>"+c+"</span>";
+//                }
+                return c;
+            });
+            var line = chars.join('');
+            result += line + '\r\n';
+        }
+        return result;
     },
     foo:'bar'
 };
@@ -60,22 +113,21 @@ var PeggyLease = function(term) {
     this.end_date = new Date() + term;
     this.board_lease_code = '12345'; //Number(new Date()) + '';
 
-
-//        m = md5.new()
-//        m.update(unicode(datetime.now().microsecond.__str__))
-//        lease_code = m.hexdigest()
-
-//        lease_expiry = datetime.now() + timedelta(seconds=term * 60)
-
+    //TODO: generate live 'lease codes' ?
+    //m = md5.new()
+    //m.update(unicode(datetime.now().microsecond.__str__))
+    //lease_code = m.hexdigest()
+    //lease_expiry = datetime.now() + timedelta(seconds=term * 60)
 };
 PeggyLease.prototype = {
     end_date: null,
     board_lease_code: null,
     is_expired: function() {
+        //TODO: make working expiration code?  or... does it matter here?
         return false;
 //        return (!this.end_date) || ((new Date()) > this.end_date);
     },
-    current_color: 29
+    current_color: String.fromCharCode(29)
 };
 
 var PeggyLogic = function() {
@@ -86,18 +138,29 @@ PeggyLogic.prototype = {
     _board: null,
 
     render_buffer: function() {
-        var b = this._board._buffer;
-        var result = '';
-        for(var r=0;r< b.length;r++ )
-        {
+        return this._board.render_buffer();
+    },
 
-            var chars = b[r].map(function(c) {
-                return (c) ? c : '';
+    bufferPolling: function(callback) {
+        var b = this._board;
+
+        var expiredTimer = setTimeout(function() {
+            callback({
+                buffer: null,
+                stamp: new Date(),
+                error: "Timed out"
             });
-            var line = chars.join('');
-            result += line + '\r\n';
-        }
-        return result;
+        }, 10000);
+
+        this._board.server.once("updated", function() {
+            clearTimeout(expiredTimer);
+            callback({
+                buffer: b.raw_buffer(),
+                height:b.height(),
+                width:b.width(),
+                stamp: new Date()
+            });
+        });
 
     },
 
@@ -159,13 +222,13 @@ PeggyLogic.prototype = {
         else {
             switch (color) {
                 case 'green':
-                    this._lease.current_color = 29;
+                    this._lease.current_color = String.fromCharCode(29);
                     break;
                 case 'red':
-                    this._lease.current_color = 30;
+                    this._lease.current_color = String.fromCharCode(30);
                     break;
                 case 'orange':
-                    this._lease.current_color = 31;
+                    this._lease.current_color = String.fromCharCode(31);
                     break;
                 default:
                     return { result: 'failure', reason_code: 'unknown_color' };
@@ -187,15 +250,10 @@ var logic = new PeggyLogic();
 
 // Create the routing table
 router.map(function () {
-    this.root.bind(function (req, res) { res.send("It's your own personal litebrite!") });
-
-
-    this.get ("test/:id").bind(function(req, res) {
-
-            res.send(200, {}, {
-                id: "id was " + req.params.id
-            });
-        });
+    this.root.bind(function (req, res) {
+        res.send("It's your own personal litebrite!" +
+            "Point your client peggy url to this url!")
+    });
 
     this.get ("get_lease").bind(function(req, res) {
         var result = logic.create_lease();
@@ -214,7 +272,6 @@ router.map(function () {
         res.send(200, {}, logic.clear_board(lease_code, row));
     });
 
-
     this.get(/^set_color\/([0-9]+)\/([0-9]+)$/).bind(function(req, res, lease_code, color) {
         res.send(200, {}, logic.set_color(lease_code, color));
     });
@@ -226,10 +283,20 @@ router.map(function () {
         res.send(200, {}, logic.write_to_board(lease_code, row, col, msg));
     });
 
-
     this.get(/^buffer$/).bind(function (req, res) {
         res.send(200, {}, logic.render_buffer());
     });
+
+    this.get(/^bufferPolling/).bind(function (req, res) {
+
+        logic.bufferPolling(function(data) {
+            res.send(200, {}, data);
+        });
+
+
+    });
+
+
 
     //TODO? :
     //url(r'^peggy/set_color$', 'sign_server.peggy.set_color'),
@@ -245,24 +312,32 @@ router.map(function () {
             msg: "I guess this is an object..."
         });
     });
-//    this.post('/trolls').bind(function (req, res, data) {
-//        sys.puts(data.type); // "Cave-Troll"
-//        res.send(200);
-//    });
+
 });
 
 
 require('http').createServer(function (request, response) {
-
     var body = "";
-
     request.addListener('data', function (chunk) { body += chunk });
-
     request.addListener('end', function () {
         //
         // Dispatch the request to the router
         //
         router.handle(request, body, function (result) {
+
+            if (result.status === 404) {
+                sys.puts("Router didn't find request for request.url");
+                files.serve(request, response, function (err, result) {
+                    // If the file wasn't found
+                    if (err && (err.status === 404)) {
+                        response.writeHead(404);
+                        response.end('File not found.');
+                    }
+                });
+                return;
+            }
+
+
             response.writeHead(result.status, result.headers);
             response.end(result.body);
         });
