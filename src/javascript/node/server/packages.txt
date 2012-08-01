@@ -1,1 +1,2 @@
 npm install journey
+npm install node-static
