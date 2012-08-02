@@ -9,10 +9,9 @@
 			$("#new_question_form").submit(function(event){
 				event.preventDefault();
 				
-				alert('submit');	
 				var form = $(this);
 				var url = form.attr( 'action' );
-				var questiontext = $("#new_question_form").val();
+				var questiontext = $("#question_text").val();
 				
 				$.ajax({
 					type: 'POST',
