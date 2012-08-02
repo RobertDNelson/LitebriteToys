@@ -182,6 +182,7 @@ PeggyLogic.prototype = {
         var b = this._board;
         return {
             buffer: b.raw_buffer(),
+            colors: b.raw_color_buffer(),
             height:b.height(),
             width:b.width(),
             stamp: new Date()
