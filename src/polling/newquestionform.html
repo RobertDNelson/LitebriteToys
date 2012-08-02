@@ -1,6 +1,36 @@
 <html>
-	<form name="new_question_form">
-		<input name="question_text" />
-		<input type="submit" value="Submit New Question"/>
+	<head>
+		<script src="jquery-1.7.2.min.js" ></script>
+
+		<script type="text/javascript">
+
+			$(document).ready(function(){
+			
+			$("#new_question_form").submit(function(event){
+				event.preventDefault();
+				
+				alert('submit');	
+				var form = $(this);
+				var url = form.attr( 'action' );
+				var questiontext = $("#new_question_form").val();
+				
+				$.ajax({
+					type: 'POST',
+					url: url,
+					data: { "question_text":questiontext},
+					success:function(){
+						alert('success');
+					}
+				});
+
+			});
+			});
+		</script>
+	</head>
+	<body>
+	<form id="new_question_form" action="http://10.1.3.251/litebrite/poll" method="post">
+		<input id="question_text" name="question_text" />
+		<input id="submit_new_question" type="submit" value="Submit New Question" />
 	</form>
+	</body>
 </html>
