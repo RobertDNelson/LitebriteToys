@@ -1,0 +1,31 @@
+<div id="FeedHolder">
+</div>
+<script type="text/javascript">
+	$(function(){
+		// $.ajax({
+		// 	url: "http://search.twitter.com/search.json?q=%40CoCoMSP&callback=?&rpp=15",
+		// 	crossDomain: true,
+		// 	jsonp: true,
+		// 	beforeSend: function ( xhr ) {
+		// 		xhr.overrideMimeType("text/plain; charset=x-user-defined");
+		// 	}
+		// }).done(function ( data ) {
+		// 	if( console && console.log ) {
+		// 		console.log("Sample of data:", data.slice(0, 100));
+		// 	}
+		// });
+
+		$.getJSON("http://search.twitter.com/search.json?q=%40CoCoMSP&rpp=15&jsoncallback=?", function(data) {
+			var items = [];
+
+			$.each(data.results, function(key, vars) {
+				items.push('<li id="' + key + '">@' + vars.from_user + '(' + vars.from_user_name + ') ' + vars.profile_image_url + ' - ' + vars.text + '</li>');
+			});
+
+			$('<ul/>', {
+				'class': 'my-new-list',
+				html: items.join('')
+			}).html('#FeedHolder');
+		});
+	});
+</script>
