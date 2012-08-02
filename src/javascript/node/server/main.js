@@ -10,6 +10,7 @@ var journey = require('journey'),
     static = require('node-static'),
     files = new (static.Server)('./static'),
     sys = require('sys');
+var md5 = require("blueimp-md5").md5;
 
 
 var PeggyBoard = function() {
@@ -17,15 +18,18 @@ var PeggyBoard = function() {
 };
 PeggyBoard.prototype = {
     _buffer: null,
+    _colorBuffer: null,
     server: null,
     initialize_buffer: function(width, height) {
         this._buffer = new Array(height);
+        this._colorBuffer = new Array(height);
         this._width = width;
         this._height = height;
 
         //initialize our buffer
         for(var i=0; i< height; i++ ) {
             this._buffer[i] = new Array(width);
+            this._colorBuffer[i] = new Array(width);
         }
 
         var eventsType = require('events').EventEmitter;
@@ -58,15 +62,16 @@ PeggyBoard.prototype = {
         if ((col !== 0) && (!col)) { col = 0; }
 
         var i = col;
+        var cc = 29;
         while (msg.length) {
-            var code = msg[0].charCodeAt(0)
-            console.log('MY CODE IS ' + code)
+            var code = msg[0].charCodeAt(0);
             if (code >= 29 && code <= 31) {
-
+                cc = code;
             } else {
-                this._buffer[row][i++] = msg[0]
+                this._colorBuffer[row][i] = cc;
+                this._buffer[row][i++] = msg[0];
             }
-            msg = msg.substring(1)
+            msg = msg.substring(1);
         }
 
         this.onBoardUpdated();
@@ -74,6 +79,9 @@ PeggyBoard.prototype = {
     },
     raw_buffer: function() {
         return this._buffer;
+    },
+    raw_color_buffer: function() {
+        return this._colorBuffer;
     },
     render_buffer: function() {
         var b = this._buffer;
@@ -108,29 +116,29 @@ PeggyBoard.prototype = {
     foo:'bar'
 };
 
-
 var PeggyLease = function(term) {
     //TODO: make constants
     //no more than 10 minutes, no less than 1 minute
     term = Math.max(1, Math.min(10, term));
 
-    this.term = term;
-    this.end_date = new Date() + term;
-    this.board_lease_code = '12345'; //Number(new Date()) + '';
+    this.end_date = new Date();
 
-    //TODO: generate live 'lease codes' ?
-    //m = md5.new()
-    //m.update(unicode(datetime.now().microsecond.__str__))
-    //lease_code = m.hexdigest()
-    //lease_expiry = datetime.now() + timedelta(seconds=term * 60)
+    this.term = term;
+    this.end_date.setMinutes(this.end_date.getMinutes() + term);
+    console.log("Lease Will Expire On "+ this.end_date);
+    var lease_code = md5((new Date().getTime()));
+    this.board_lease_code = lease_code; //Number(new Date()) + '';
 };
+
+
 PeggyLease.prototype = {
     end_date: null,
     board_lease_code: null,
     is_expired: function() {
-        //TODO: make working expiration code?  or... does it matter here?
-        return false;
-//        return (!this.end_date) || ((new Date()) > this.end_date);
+        var current_time = new Date();
+        var remaining_time = this.end_date.getTime()-current_time.getTime();
+        console.log("Remaining Lease Time " + remaining_time);
+        return ((!this.end_date) || (remaining_time < 0));
     },
     current_color: String.fromCharCode(29)
 };
@@ -151,6 +159,7 @@ PeggyLogic.prototype = {
 
         var expiredTimer = setTimeout(function() {
             callback({
+                colors: null,
                 buffer: null,
                 stamp: new Date(),
                 error: "Timed out"
@@ -161,6 +170,7 @@ PeggyLogic.prototype = {
             clearTimeout(expiredTimer);
             callback({
                 buffer: b.raw_buffer(),
+                colors: b.raw_color_buffer(),
                 height:b.height(),
                 width:b.width(),
                 stamp: new Date()
@@ -273,18 +283,20 @@ router.map(function () {
     this.get(/^clear\/(\d+)$/).bind(function(req, res, lease_code) {
         res.send(200, {}, logic.clear_board(lease_code));
     });
-    this.get(/^clear\/(\d+)\/([0-9]+)$/).bind(function(req, res, lease_code, row) {
+    this.get(/^clear\/(\d+)\/(\w+)$/).bind(function(req, res, lease_code, row) {
         res.send(200, {}, logic.clear_board(lease_code, row));
     });
 
-    this.get(/^set_color\/([0-9]+)\/([0-9]+)$/).bind(function(req, res, lease_code, color) {
+    this.get(/^set_color\/(\w+)\/([0-9]+)$/).bind(function(req, res, lease_code, color) {
         res.send(200, {}, logic.set_color(lease_code, color));
     });
 
-    this.get(/^write\/([0-9]+)\/([0-9]+)\/([0-9]+)\/([a-z]+)$/).bind(function (req, res, lease_code, row, col, msg) {
+    this.get(/^write\/(\w+)\/([0-9]+)\/([0-9]+)\/([^\n]+)$/).bind(function (req, res, lease_code, row, col, msg) {
+        msg = decodeURIComponent(msg)
         res.send(200, {}, logic.write_to_board(lease_code, row, col, msg));
     });
-    this.post(/^write\/([0-9]+)\/([0-9]+)\/([0-9]+)\/([a-z]+)$/).bind(function (req, res, lease_code, row, col, msg) {
+    this.post(/^write\/(\w+)\/([0-9]+)\/([0-9]+)\/([^\n]+)$/).bind(function (req, res, lease_code, row, col, msg) {
+        msg = decodeURIComponent(msg)
         res.send(200, {}, logic.write_to_board(lease_code, row, col, msg));
     });
 
@@ -329,6 +341,7 @@ require('http').createServer(function (request, response) {
         // Dispatch the request to the router
         //
         router.handle(request, body, function (result) {
+            console.log('something ' + request.url)
 
             if (result.status === 404) {
                 sys.puts("Router didn't find request for request.url");
@@ -336,7 +349,7 @@ require('http').createServer(function (request, response) {
                     // If the file wasn't found
                     if (err && (err.status === 404)) {
                         response.writeHead(404);
-                        response.end('File not found.');
+                        response.end('File not found. ' + request.url);
                     }
                 });
                 return;
