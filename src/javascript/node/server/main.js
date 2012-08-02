@@ -57,13 +57,18 @@ PeggyBoard.prototype = {
         if ((row !== 0) && (!row)) { row = 0; }
         if ((col !== 0) && (!col)) { col = 0; }
 
-        var i=0;
-        for(var r=row;r<this._height;r++) {
-            for(var c=col;c<this._width;c++) {
-                this._buffer[r][c] = msg[i];
-                i++;
+        var i = col;
+        while (msg.length) {
+            var code = msg[0].charCodeAt(0)
+            console.log('MY CODE IS ' + code)
+            if (code >= 29 && code <= 31) {
+
+            } else {
+                this._buffer[row][i++] = msg[0]
             }
+            msg = msg.substring(1)
         }
+
         this.onBoardUpdated();
         return true;
     },
