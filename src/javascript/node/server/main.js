@@ -17,15 +17,18 @@ var PeggyBoard = function() {
 };
 PeggyBoard.prototype = {
     _buffer: null,
+    _colorBuffer: null,
     server: null,
     initialize_buffer: function(width, height) {
         this._buffer = new Array(height);
+        this._colorBuffer = new Array(height);
         this._width = width;
         this._height = height;
 
         //initialize our buffer
         for(var i=0; i< height; i++ ) {
             this._buffer[i] = new Array(width);
+            this._colorBuffer[i] = new Array(width);
         }
 
         var eventsType = require('events').EventEmitter;
@@ -58,15 +61,16 @@ PeggyBoard.prototype = {
         if ((col !== 0) && (!col)) { col = 0; }
 
         var i = col;
+        var cc = 29;
         while (msg.length) {
-            var code = msg[0].charCodeAt(0)
-            console.log('MY CODE IS ' + code)
+            var code = msg[0].charCodeAt(0);
             if (code >= 29 && code <= 31) {
-
+                cc = code;
             } else {
-                this._buffer[row][i++] = msg[0]
+                this._colorBuffer[row][i] = cc;
+                this._buffer[row][i++] = msg[0];
             }
-            msg = msg.substring(1)
+            msg = msg.substring(1);
         }
 
         this.onBoardUpdated();
@@ -74,6 +78,9 @@ PeggyBoard.prototype = {
     },
     raw_buffer: function() {
         return this._buffer;
+    },
+    raw_color_buffer: function() {
+        return this._colorBuffer;
     },
     render_buffer: function() {
         var b = this._buffer;
@@ -151,6 +158,7 @@ PeggyLogic.prototype = {
 
         var expiredTimer = setTimeout(function() {
             callback({
+                colors: null,
                 buffer: null,
                 stamp: new Date(),
                 error: "Timed out"
@@ -161,6 +169,7 @@ PeggyLogic.prototype = {
             clearTimeout(expiredTimer);
             callback({
                 buffer: b.raw_buffer(),
+                colors: b.raw_color_buffer(),
                 height:b.height(),
                 width:b.width(),
                 stamp: new Date()
@@ -281,10 +290,12 @@ router.map(function () {
         res.send(200, {}, logic.set_color(lease_code, color));
     });
 
-    this.get(/^write\/([0-9]+)\/([0-9]+)\/([0-9]+)\/([a-z]+)$/).bind(function (req, res, lease_code, row, col, msg) {
+    this.get(/^write\/([0-9]+)\/([0-9]+)\/([0-9]+)\/([^\n]+)$/).bind(function (req, res, lease_code, row, col, msg) {
+        msg = decodeURIComponent(msg)
         res.send(200, {}, logic.write_to_board(lease_code, row, col, msg));
     });
-    this.post(/^write\/([0-9]+)\/([0-9]+)\/([0-9]+)\/([a-z]+)$/).bind(function (req, res, lease_code, row, col, msg) {
+    this.post(/^write\/([0-9]+)\/([0-9]+)\/([0-9]+)\/([^\n]+)$/).bind(function (req, res, lease_code, row, col, msg) {
+        msg = decodeURIComponent(msg)
         res.send(200, {}, logic.write_to_board(lease_code, row, col, msg));
     });
 
@@ -329,6 +340,7 @@ require('http').createServer(function (request, response) {
         // Dispatch the request to the router
         //
         router.handle(request, body, function (result) {
+            console.log('something ' + request.url)
 
             if (result.status === 404) {
                 sys.puts("Router didn't find request for request.url");
@@ -336,7 +348,7 @@ require('http').createServer(function (request, response) {
                     // If the file wasn't found
                     if (err && (err.status === 404)) {
                         response.writeHead(404);
-                        response.end('File not found.');
+                        response.end('File not found. ' + request.url);
                     }
                 });
                 return;
