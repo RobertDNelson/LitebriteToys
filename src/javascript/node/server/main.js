@@ -161,8 +161,18 @@ PeggyLogic.prototype = {
                 stamp: new Date()
             });
         });
-
     },
+
+    bufferState: function() {
+        var b = this._board;
+        return {
+            buffer: b.raw_buffer(),
+            height:b.height(),
+            width:b.width(),
+            stamp: new Date()
+        };
+    },
+
 
     has_lease: function() {
         return ((this._lease != null) && (!this._lease.is_expired()));
@@ -285,6 +295,10 @@ router.map(function () {
 
     this.get(/^buffer$/).bind(function (req, res) {
         res.send(200, {}, logic.render_buffer());
+    });
+
+    this.get(/^bufferState/).bind(function (req, res) {
+         res.send(200, {}, logic.bufferState());
     });
 
     this.get(/^bufferPolling/).bind(function (req, res) {

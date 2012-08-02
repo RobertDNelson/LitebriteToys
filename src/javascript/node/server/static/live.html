@@ -87,11 +87,6 @@ live page
                     var colorChar = (colorRow && (colorRow.length > col) && (colorRow[col] !== 0)) ? colorRow[col] : lastColor;
                     var colorString = getColorByCode(colorChar);
 
-
-//                    if (lastColor != colorChar) {
-//                        console.debug('colChar was ', colorChar, ' color was ', colorString);
-//                    }
-
                     lastColor = colorChar;
                     var valOut = (val) ? val : '&nbsp;';
                     line.push("<span class='char "+colorString+"'>" + valOut + "</span>")
@@ -131,7 +126,27 @@ live page
             }
         });
     };
+    var initialStateFn = function() {
+        $.ajax({
+           type:"GET",
+           url:"/bufferState?stamp=" + stamp,
+           async:true,
+           cache:false,
+           success:function (data) {
+               updateBoard(data);
+               stamp = data['stamp'];
+               longPollingFn();
+           },
+           error:function (xhr, txt, err) {
+               console.error("Args: ", arguments);
+               console.debug('waiting 5 seconds before polling...');
+               setTimeout(longPollingFn, 5000);
+           }
+       });
+    };
+
     $(function () {
+        initialStateFn();
         longPollingFn();
     });
 
