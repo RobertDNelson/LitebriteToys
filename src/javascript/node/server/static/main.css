@@ -1,0 +1,14 @@
+
+#liveBoardDiv { width: 1440px; padding: 5px; }
+
+.char { background-color: #202020; color: #FFFFFF; margin-right: 1px; font-size: 10pt; display: inline-block; height: 17px; width: 8px; font-family: monospace; }
+.char.green { color: lime; }
+.char.amber { color: orange; }
+.char.red { color: red; }
+
+.row {
+            background-color: #000000;
+            padding-bottom: 2px;
+            padding-top: 2px;
+            display: inline-block;
+        }
