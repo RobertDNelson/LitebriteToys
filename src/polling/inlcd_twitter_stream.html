@@ -2,30 +2,23 @@
 </div>
 <script type="text/javascript">
 	$(function(){
-		// $.ajax({
-		// 	url: "http://search.twitter.com/search.json?q=%40CoCoMSP&callback=?&rpp=15",
-		// 	crossDomain: true,
-		// 	jsonp: true,
-		// 	beforeSend: function ( xhr ) {
-		// 		xhr.overrideMimeType("text/plain; charset=x-user-defined");
-		// 	}
-		// }).done(function ( data ) {
-		// 	if( console && console.log ) {
-		// 		console.log("Sample of data:", data.slice(0, 100));
-		// 	}
-		// });
+	    jQuery.ajax({ 
+	        type: 'GET',
+	        url: 'http://search.twitter.com/search.json?q=%40CoCoMSP&rpp=10' ,
+	        dataType: 'jsonp', 
+	        success: function(data) {
+				var htmlsource = '<ul>';
+				var items = [];
 
-		$.getJSON("http://search.twitter.com/search.json?q=%40CoCoMSP&rpp=15&jsoncallback=?", function(data) {
-			var items = [];
+				$.each(data.results, function(i, tweet) {
+					items.push('<li id="' + i + '"><img src="' + tweet.profile_image_url + '" />@' + tweet.from_user + '(' + tweet.from_user_name + ') ' + ' - ' + tweet.text + '</li>');
+				});
 
-			$.each(data.results, function(key, vars) {
-				items.push('<li id="' + key + '">@' + vars.from_user + '(' + vars.from_user_name + ') ' + vars.profile_image_url + ' - ' + vars.text + '</li>');
-			});
+				htmlsource += items.join('');
+				htmlsource += '</ul>';
 
-			$('<ul/>', {
-				'class': 'my-new-list',
-				html: items.join('')
-			}).html('#FeedHolder');
-		});
+				$('#FeedHolder').html(htmlsource);
+	        }
+	    });
 	});
 </script>
