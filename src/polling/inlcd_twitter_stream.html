@@ -4,14 +4,14 @@
 	$(function(){
 	    jQuery.ajax({ 
 	        type: 'GET',
-	        url: 'http://search.twitter.com/search.json?q=%40CoCoMSP&rpp=10' ,
+	        url: 'http://search.twitter.com/search.json?q=%40CoCoMSP&rpp=15' ,
 	        dataType: 'jsonp', 
 	        success: function(data) {
 				var htmlsource = '<ul>';
 				var items = [];
 
 				$.each(data.results, function(i, tweet) {
-					items.push('<li id="' + i + '"><img src="' + tweet.profile_image_url + '" />@' + tweet.from_user + '(' + tweet.from_user_name + ') ' + ' - ' + tweet.text + '</li>');
+					items.push('<li id="' + i + '"><img src="' + tweet.profile_image_url + '" />' + tweet.text + '<div class="TweetAuthor" title="' + tweet.from_user_name + '">@' + tweet.from_user + '</div></li>');
 				});
 
 				htmlsource += items.join('');
