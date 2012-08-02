@@ -37,23 +37,49 @@ live page
         var boardOut = rowsOut.join('');
         $("#liveBoardDiv").html(boardOut);
 
+    var getColorByCode = function(code) {
+        var result = 'green';
+        switch(code) {
+            case 30: result = 'amber'; break;
+            case 31: result = 'red'; break;
+            default:
+            case 29: result = 'green'; break;
+        }
+        return result;
+    };
+
     var updateBoard = function (data) {
         if (data && data['buffer']) {
 
+            data['colors'] = [
+                [ 0, 0, 0, 29, 0, 0, 0, 0],
+                [ 0, 0, 0, 30, 0, 0, 0, 0 ],
+                [ 0, 0, 0, 31, 0, 0, 0, 0 ],
+                [ ]
+            ];
+
             var width = data['width'],
                     height = data['height'],
-                    buffer = data['buffer'];
+                    buffer = data['buffer'],
+                    colors = data['colors'],
+                    lastColor = 29;
 
             var rowsOut = [];
 
-            for (var row = 0; row < height; row++) {
 
+            for (var row = 0; row < height; row++) {
                 var line = [];
                 for (var col = 0; col < width; col++) {
                     var val = buffer[row][col];
 
+                    //be cool if the color isn't there.
+                    var colorRow = (colors.length > row) ? colors[row] : null;
+                    var colorChar = (colorRow && (colorRow.length > col) && (colorRow[col] !== 0)) ? colorRow[col] : lastColor;
+                    var colorString = getColorByCode(colorChar);
+
+                    lastColor = colorChar;
                     var valOut = (val) ? val : '&nbsp;';
-                    line.push("<span class='char green'>" + valOut + "</span>")
+                    line.push("<span class='char "+colorString+"'>" + valOut + "</span>")
                 }
 
                 rowsOut.push("<div class='row row" + row + "'>" + line.join('') + "</div>");
@@ -90,7 +116,27 @@ live page
             }
         });
     };
+    var initialStateFn = function() {
+        $.ajax({
+           type:"GET",
+           url:"/bufferState?stamp=" + stamp,
+           async:true,
+           cache:false,
+           success:function (data) {
+               updateBoard(data);
+               stamp = data['stamp'];
+               longPollingFn();
+           },
+           error:function (xhr, txt, err) {
+               console.error("Args: ", arguments);
+               console.debug('waiting 5 seconds before polling...');
+               setTimeout(longPollingFn, 5000);
+           }
+       });
+    };
+
     $(function () {
+        initialStateFn();
         longPollingFn();
     });
 
