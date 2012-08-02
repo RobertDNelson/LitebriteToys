@@ -10,6 +10,7 @@ var journey = require('journey'),
     static = require('node-static'),
     files = new (static.Server)('./static'),
     sys = require('sys');
+var md5 = require("blueimp-md5").md5;
 
 
 var PeggyBoard = function() {
@@ -103,29 +104,29 @@ PeggyBoard.prototype = {
     foo:'bar'
 };
 
-
 var PeggyLease = function(term) {
     //TODO: make constants
     //no more than 10 minutes, no less than 1 minute
     term = Math.max(1, Math.min(10, term));
 
-    this.term = term;
-    this.end_date = new Date() + term;
-    this.board_lease_code = '12345'; //Number(new Date()) + '';
+    this.end_date = new Date();
 
-    //TODO: generate live 'lease codes' ?
-    //m = md5.new()
-    //m.update(unicode(datetime.now().microsecond.__str__))
-    //lease_code = m.hexdigest()
-    //lease_expiry = datetime.now() + timedelta(seconds=term * 60)
+    this.term = term;
+    this.end_date.setMinutes(this.end_date.getMinutes() + term);
+    console.log("Lease Will Expire On "+ this.end_date);
+    var lease_code = md5((new Date().getTime()));
+    this.board_lease_code = lease_code; //Number(new Date()) + '';
 };
+
+
 PeggyLease.prototype = {
     end_date: null,
     board_lease_code: null,
     is_expired: function() {
-        //TODO: make working expiration code?  or... does it matter here?
-        return false;
-//        return (!this.end_date) || ((new Date()) > this.end_date);
+        var current_time = new Date();
+        var remaining_time = this.end_date.getTime()-current_time.getTime();
+        console.log("Remaining Lease Time " + remaining_time);
+        return ((!this.end_date) || (remaining_time < 0));
     },
     current_color: String.fromCharCode(29)
 };
@@ -268,18 +269,18 @@ router.map(function () {
     this.get(/^clear\/(\d+)$/).bind(function(req, res, lease_code) {
         res.send(200, {}, logic.clear_board(lease_code));
     });
-    this.get(/^clear\/(\d+)\/([0-9]+)$/).bind(function(req, res, lease_code, row) {
+    this.get(/^clear\/(\d+)\/(\w+)$/).bind(function(req, res, lease_code, row) {
         res.send(200, {}, logic.clear_board(lease_code, row));
     });
 
-    this.get(/^set_color\/([0-9]+)\/([0-9]+)$/).bind(function(req, res, lease_code, color) {
+    this.get(/^set_color\/(\w+)\/([0-9]+)$/).bind(function(req, res, lease_code, color) {
         res.send(200, {}, logic.set_color(lease_code, color));
     });
 
-    this.get(/^write\/([0-9]+)\/([0-9]+)\/([0-9]+)\/([a-z]+)$/).bind(function (req, res, lease_code, row, col, msg) {
+    this.get(/^write\/(\w+)\/([0-9]+)\/([0-9]+)\/([a-z]+)$/).bind(function (req, res, lease_code, row, col, msg) {
         res.send(200, {}, logic.write_to_board(lease_code, row, col, msg));
     });
-    this.post(/^write\/([0-9]+)\/([0-9]+)\/([0-9]+)\/([a-z]+)$/).bind(function (req, res, lease_code, row, col, msg) {
+    this.post(/^write\/(\w+)\/([0-9]+)\/([0-9]+)\/([a-z]+)$/).bind(function (req, res, lease_code, row, col, msg) {
         res.send(200, {}, logic.write_to_board(lease_code, row, col, msg));
     });
 
