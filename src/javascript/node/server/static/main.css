@@ -1,5 +1,5 @@
 
-#liveBoardDiv { width: 1440px; padding: 5px; }
+#liveBoardDiv { background: black; width: 1440px; padding: 5px; }
 
 .char { background-color: #202020; color: #FFFFFF; margin-right: 1px; font-size: 10pt; display: inline-block; height: 17px; width: 8px; font-family: monospace; }
 .char.green { color: lime; }
@@ -12,3 +12,15 @@
             padding-top: 2px;
             display: inline-block;
         }
+
+.header { background: black; height: 25px; width: 1450px; }
+.headerText { color: white; font-family: Arial; font-weight: bold; font-size: 16px; }
+.headerText li { list-style: none; display: block; float: left; margin: 7px 0 0;}
+.headerText li span { font-size: 12px; }
+.headerText li:first-child { margin-left: -25px; }
+.headerText li:nth-child(2) { margin-left: 15px; }
+.headerText li:nth-child(3) { margin-left: 175px; }
+.headerText li:nth-child(4) { margin-left: 150px; }
+.headerText li:nth-child(5) { margin-left: 75px; }
+.headerText li:nth-child(6) { margin-left: 50px; }
+.headerText li:last-child { margin-left: 100px; }

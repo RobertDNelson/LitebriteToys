@@ -8,13 +8,34 @@
 <body>
 live page
 
-
+<div class="header">
+    <ul class="headerText">
+        <li>NCI<span> OPENOUTCRY</span></li>
+        <li>NCI <span>MGEXPRESS</span></li>
+        <li>CBOT CORN</li>
+        <li>MGEX WHEAT<span>MGEX PRESS</span></li>
+        <li>SPREADS</li>
+        <li>CBOT SOYBEANS</li>
+        <li>BEAN MEAL</li>
+    </ul>
+</div>
 <div id="liveBoardDiv">
+
 
 </div>
 
 
-<script>
+<script type="text/javascript">
+        var rowsOut = [];
+        for (var row = 0; row < 12; row++) {
+            var line = [];
+            for (var col = 0; col < 160; col++) {
+                line.push('<span class="char green">&nbsp;</span>');
+            }
+            rowsOut.push('<div class="row row' + row + '">' + line.join('') + '</div>');
+        }
+        var boardOut = rowsOut.join('');
+        $("#liveBoardDiv").html(boardOut);
 
     var updateBoard = function (data) {
         if (data && data['buffer']) {
