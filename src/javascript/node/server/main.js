@@ -119,12 +119,12 @@ PeggyBoard.prototype = {
 var PeggyLease = function(term) {
     //TODO: make constants
     //no more than 10 minutes, no less than 1 minute
-    term = Math.max(1, Math.min(10, term));
+    term = Math.max(1, Math.min(10 * 60, term));
 
     this.end_date = new Date();
 
     this.term = term;
-    this.end_date.setMinutes(this.end_date.getMinutes() + term);
+    this.end_date.setSeconds( this.end_date.getSeconds() + term );
     console.log("Lease Will Expire On "+ this.end_date);
     var lease_code = md5((new Date().getTime()));
     this.board_lease_code = lease_code; //Number(new Date()) + '';
@@ -220,6 +220,11 @@ PeggyLogic.prototype = {
         }
     },
 
+    expire_lease: function(lease) {
+        this._lease = null;
+        return { result:true };
+    },
+
     clear_board: function(lease_code, row) {
         if (!this.get_current_lease(lease_code)) {
             return { result: 'failure', reason_code: 'bad_lease_code ' + lease_code };
@@ -289,6 +294,10 @@ router.map(function () {
         var result = logic.create_lease(term);
         res.send(200, {}, result);
     });
+    this.get(/^expire_lease\/(\w+)$/).bind(function(req, res, lease) {
+        var result = logic.expire_lease(lease);
+        res.send(200, {}, result);
+    })
 
 
     this.get(/^clear\/(\d+)$/).bind(function(req, res, lease_code) {
