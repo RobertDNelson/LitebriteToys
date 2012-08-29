@@ -1,0 +1,8 @@
+Strib RSS Parser
+
+How to run:
+I'm assuming you have ruby installed. 
+1) Make sure you have the bundler installed if you dont, run "gem install bundler"
+2) run "bundler install"
+3) run "bundle exec ruby rss.rb"
+
