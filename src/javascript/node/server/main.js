@@ -303,11 +303,11 @@ router.map(function () {
     });
 
     this.get(/^write\/(\w+)\/([0-9]+)\/([0-9]+)\/([^\n]+)$/).bind(function (req, res, lease_code, row, col, msg) {
-        msg = decodeURIComponent(msg)
+        msg = decodeURIComponent(msg);
         res.send(200, {}, logic.write_to_board(lease_code, row, col, msg));
     });
     this.post(/^write\/(\w+)\/([0-9]+)\/([0-9]+)\/([^\n]+)$/).bind(function (req, res, lease_code, row, col, msg) {
-        msg = decodeURIComponent(msg)
+        msg = decodeURIComponent(msg);
         res.send(200, {}, logic.write_to_board(lease_code, row, col, msg));
     });
 
