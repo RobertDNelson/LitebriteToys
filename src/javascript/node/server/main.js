@@ -220,6 +220,11 @@ PeggyLogic.prototype = {
         }
     },
 
+    expire_lease: function(lease) {
+        this._lease = null;
+        return { result:true };
+    },
+
     clear_board: function(lease_code, row) {
         if (!this.get_current_lease(lease_code)) {
             return { result: 'failure', reason_code: 'bad_lease_code ' + lease_code };
@@ -289,6 +294,10 @@ router.map(function () {
         var result = logic.create_lease(term);
         res.send(200, {}, result);
     });
+    this.get(/^expire_lease\/(\w+)$/).bind(function(req, res, lease) {
+        var result = logic.expire_lease(lease);
+        res.send(200, {}, result);
+    })
 
 
     this.get(/^clear\/(\d+)$/).bind(function(req, res, lease_code) {
